@@ -9,4 +9,5 @@ To record necessary information.
 To monitor real time detection
 ## Data table
 ![alt text](https://github.com/indraromdoni/automatic-visual-inspection/blob/main/screenshots/Screenshot%202025-10-07%20114408.png?raw=true)
+![alt text](https://github.com/indraromdoni/automatic-visual-inspection/blob/main/screenshots/Screenshot%202025-10-07%20114420.png?raw=true)
 To trace recorded data
