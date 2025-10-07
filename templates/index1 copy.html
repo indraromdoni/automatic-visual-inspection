@@ -1,0 +1,115 @@
+<html>
+    <head>
+        <title>Ingot Visual Inspection</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+        <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f8f8; }
+        .container { max-width: 1000px; margin: auto; padding: 10px; }
+        h2 { text-align: center; }
+        img { width: 100%; max-width: 800px; display: block; margin: auto; border-radius: 8px; }
+        .recent-container {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px #ccc;
+            padding: 18px 10px 10px 10px;
+            margin: 30px auto 0 auto;
+            max-width: 1550px;
+            min-width: 340px;
+            width: fit-content;
+        }
+        .recent {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .item {
+            background: #f8f8f8;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px #ddd;
+            padding: 10px;
+            text-align: center;
+            width: 180px;
+        }
+        .item img {
+            width: 160px;
+            height: auto;
+            border-radius: 6px;
+        }
+        .status-ok { color: green; font-weight: bold; }
+        .status-ng { color: red; font-weight: bold; }
+        a.button { display: inline-block; margin: 10px auto; padding: 10px 20px; background: #007bff; color: #fff; border-radius: 5px; text-decoration: none; text-align: center;}
+        a.button:hover { background: #0056b3; }
+        </style>
+        <script>
+            const socket = io();
+            socket.on('recent_images', function(data) {
+                const imgMain = document.getElementById(`recent_img_main`)
+                for (let i = 0; i < 8; i++) {
+                    const imgElem = document.getElementById(`recent_img_${i}`);
+                    const statusElem = document.getElementById(`recent_status_${i}`);
+                    
+                    if (i < data.length) {
+                        if (i == 0) {
+                            imgMain.src = data[i].image;
+                            imgMain.alt = data[i].status;
+                        }
+                        imgElem.src = data[i].image;
+                        imgElem.alt = data[i].status;
+
+                        statusElem.textContent = data[i].status;
+                        statusElem.className = data[i].status === 'OK' ? 'status-ok' : 'status-ng';
+                    } else {
+                        imgElem.src = `/recent_image/${i}`;
+                        imgElem.alt = '-';
+                        statusElem.textContent = '-';
+                        statusElem.className = 'status-ng';
+                    }
+                }
+            });
+
+            function loadlast_stat() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.responseType = 'json';
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        const stat = this.response
+                        for(const i in stat['statuses']){
+                            const stts = document.getElementById(`recent_status_${i}`);
+                            stts.textContent = stat['statuses'][i];
+                            stts.className = stat['statuses'][i] === 'OK' ? 'status-ok' : 'status-ng';
+                            console.log(`status ${i} ${stat['statuses'][i]}`)
+                        }
+                    }
+                };
+                xhttp.open("GET", "/recent_status", true);
+                xhttp.send();
+            }
+            loadlast_stat()
+        </script>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Ingot Visual Inspection</h2>
+            <a href="{{ url_for('production_end') }}" class="button">Production End</a>
+            <a href="{{ url_for('adjust') }}" class="button">Pengaturan</a>
+            <a href="{{ url_for('show_data') }}" class="button">Lihat Data</a>
+            <a href="{{ url_for('download_crop') }}" class="button" style="display: none;">Simpan Crop Rectangle</a>
+            <img id="original_img" src="{{ url_for('video_feed_original') }}" style="max-width:800px; width:100%; border-radius:8px; margin-bottom:20px;">
+            <img src=recent_image/0 style="max-width:800px; width:100%; border-radius:8px; margin-bottom:20px;" alt="Recent Image" id="recent_img_main">
+            <div class="recent-container">
+                <h3>8 Produk Terakhir</h3>
+                <div class="recent">
+                    {% for i in range(8) %}
+                    <div class="item">
+                        <img id="recent_img_{{i}}" src="/recent_image/{{i}}" alt="-" />
+                        <div id="recent_status_{{i}}" class="status-ng">-</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>

@@ -1,0 +1,48 @@
+<html>
+    <head>
+        <title>Adjust Garis Diagonal</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f8f8; }
+        .container { max-width: 1000px; margin: auto; padding: 10px; }
+        h2 { text-align: center; }
+        form { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        label { display: inline-block; width: 10px; }
+        label.detection { display: inline-block; width: auto;}
+        input[type="number"] { width: 60px; padding: 5px; margin: 2px 10px; border-radius: 4px; border: 1px solid #ccc;}
+        input[type="submit"] { padding: 10px 20px; background: #007bff; color: #fff; border: none; border-radius: 5px; margin-top: 10px;}
+        input[type="submit"]:hover { background: #0056b3; }
+        img { width: 100%; max-width: 800px; display: block; margin: auto; border-radius: 8px; }
+        a.button { display: inline-block; margin: 10px auto; padding: 10px 20px; background: #007bff; color: #fff; border-radius: 5px; text-decoration: none; text-align: center;}
+        a.button:hover { background: #0056b3; }
+        @media (max-width: 600px) {
+            input[type="number"] { width: 40px; }
+            .container { padding: 2px; }
+        }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Adjust Garis Diagonal</h2>
+            <form method="post">
+            <b>Garis 1:</b><br>
+            <label>x1:</label> <input type="number" name="l1x1" value="{{l1x1}}" required>
+            <label>y1:</label> <input type="number" name="l1y1" value="{{l1y1}}" required>
+            <label>x2:</label> <input type="number" name="l1x2" value="{{l1x2}}" required>
+            <label>y2:</label> <input type="number" name="l1y2" value="{{l1y2}}" required><br>
+            <b>Garis 2:</b><br>
+            <label>x1:</label> <input type="number" name="l2x1" value="{{l2x1}}" required>
+            <label>y1:</label> <input type="number" name="l2y1" value="{{l2y1}}" required>
+            <label>x2:</label> <input type="number" name="l2x2" value="{{l2x2}}" required>
+            <label>y2:</label> <input type="number" name="l2y2" value="{{l2y2}}" required><br>
+            <b>Detection:</b><br>
+            <label class="detection">Confidence:</label> <input type="number" step="0.01" min="0" max="1" name="confidence" value="{{confidence}}" required><br>
+            <label class="detection">Threshold:</label> <input type="number" step="0.0001" min="0" max="10" name="threshold" value="{{threshold}}" required><br>
+            <input type="submit" value="Update">
+            </form>
+            <img id="original_img" src="{{ url_for('video_feed_original') }}" style="max-width:800px; width:100%; border-radius:8px; margin-bottom:20px;">
+            <img src="{{ url_for('video_feed') }}">
+            <a href="{{ url_for('index') }}" class="button">Kembali ke Stream Utama</a>
+        </div>
+    </body>
+</html>

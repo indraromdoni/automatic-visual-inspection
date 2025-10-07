@@ -1,0 +1,179 @@
+<html>
+    <head>
+        <title>Ingot Visual Inspection</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.css" />
+        <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+        <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
+        <link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.0.1/css/buttons.dataTables.min.css"/>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/3.0.1/js/dataTables.buttons.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/3.0.1/js/buttons.html5.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <style>
+            a.button { display: inline-block; margin: 10px auto; padding: 10px 20px; background: #007bff; color: #fff; border-radius: 5px; text-decoration: none; text-align: center;}
+            a.button:hover { background: #0056b3; }
+            img {
+                max-width: 100px;
+                height: auto;
+            } 
+            table img {
+                transition: transform 0.3s ease;
+                max-width: 80px;
+                height: auto;
+            }
+
+            table img:hover {
+                transform: scale(3); /* Perbesar 3x saat hover */
+                z-index: 10;
+                position: relative;
+            }
+        </style>
+    </head>
+    <body>
+        <a href="{{ url_for('index') }}" class="button">Kembali ke Stream Utama</a>
+        
+        <h2>Data Inspection dari PostgreSQL</h2>
+        <button id="refreshBtn">Refresh Data</button>
+        <table id="inspectionTable" class="display">
+            <thead>
+            <tr>
+                <th>Nomor</th>
+                <th>Tanggal</th>
+                <th>Waktu</th>
+                <th>Threshold</th>
+                <th>Score Max</th>
+                <th>Judgement</th>
+                <th>Detected Image</th>
+                <th>Original Image</th>
+                <th>Charging No</th>
+                <th>Product No</th>
+                <th>Group</th>
+            </tr>
+            </thead>
+        </table>
+  
+        <!-- Modal Bootstrap untuk preview gambar -->
+        <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Preview Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body text-center">
+                <img id="modalDetectedImg" src="" alt="Detected Image" style="max-width:90%; margin-bottom:20px; display:block;">
+                <img id="modalOriginalImg" src="" alt="Original Image" style="max-width:90%; display:block;">
+              </div>
+              <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-secondary" id="prevImgBtn">Previous</button>
+                <button type="button" class="btn btn-secondary" id="nextImgBtn">Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+            let modalData = [];
+            let modalIndex = 0;
+
+            $(document).ready(function() {
+                const table = $('#inspectionTable').DataTable({
+                    "processing": true,
+                    "serverSide": true,
+                    "ajax": {
+                        "url": "/api/data",
+                        "type": "POST"
+                    },
+                    "columns": [
+                        { "data": "nomor", "orderable": true, "searchable": true },
+                        { "data": "date", "orderable": true, "searchable": true },
+                        { "data": "time", "orderable": true, "searchable": true },
+                        { "data": "threshold", "orderable": true, "searchable": true },
+                        { "data": "score_max", "orderable": true, "searchable": true },
+                        { "data": "judgement", "orderable": true, "searchable": true },
+                        {
+                            "data": "detected_image",
+                            "orderable": false,
+                            "searchable": false,
+                            "render": function(data, type, row) {
+                                // Tambahkan data-original untuk akses gambar original
+                                return `<img src="${data}" alt="Detected Image" class="img-thumbnail detected-img" style="max-width:80px;cursor:pointer;" data-detected="${data}" data-original="${row.original_image}"/>`;
+                            }
+                        },
+                        {
+                            "data": "original_image",
+                            "orderable": false,
+                            "searchable": false,
+                            "render": function(data, type, row) {
+                                // Tambahkan data-detected untuk akses gambar detected
+                                return `<img src="${data}" alt="Original Image" class="img-thumbnail original-img" style="max-width:80px;cursor:pointer;" data-detected="${row.detected_image}" data-original="${data}"/>`;
+                            }
+                        },
+                        { "data": "charging_no", "orderable": true, "searchable": true },
+                        { "data": "product_no", "orderable": true, "searchable": true },
+                        { "data": "group", "orderable": true, "searchable": true }
+                    ],
+                    dom: 'Blfrtip',
+                    buttons: [
+                        {
+                            extend: 'excelHtml5',
+                            text: 'Export to Excel',
+                            title: 'InspectionData'
+                        }
+                    ],
+                    lengthMenu: [ [10, 25, 50, 100, 500, 1000], [10, 25, 50, 100, 500, 1000] ],
+                    pageLength: 25, // default awal, bisa diganti ke 1000 jika ingin default 1000
+                });
+                $('#refreshBtn').on('click', function() {
+                    table.ajax.reload(null, false);
+                });
+
+                // Simpan data tabel untuk navigasi
+                function updateModalData() {
+                    modalData = [];
+                    $('#inspectionTable tbody tr').each(function() {
+                        let detected = $(this).find('.detected-img').data('detected');
+                        let original = $(this).find('.detected-img').data('original');
+                        // Fallback jika klik dari original-img
+                        if (!detected) {
+                            detected = $(this).find('.original-img').data('detected');
+                            original = $(this).find('.original-img').data('original');
+                        }
+                        modalData.push({detected, original});
+                    });
+                }
+
+                // Event delegation untuk klik gambar
+                $('#inspectionTable').on('click', '.detected-img, .original-img', function() {
+                    updateModalData();
+                    // Cari index gambar yang diklik
+                    let clickedDetected = $(this).data('detected');
+                    modalIndex = modalData.findIndex(item => item.detected === clickedDetected);
+                    showModalImage();
+                    var modal = new bootstrap.Modal(document.getElementById('imageModal'));
+                    modal.show();
+                });
+
+                function showModalImage() {
+                    if (modalData.length === 0) return;
+                    $('#modalDetectedImg').attr('src', modalData[modalIndex].detected);
+                    $('#modalOriginalImg').attr('src', modalData[modalIndex].original);
+                }
+
+                $('#nextImgBtn').on('click', function() {
+                    if (modalData.length === 0) return;
+                    modalIndex = (modalIndex + 1) % modalData.length;
+                    showModalImage();
+                });
+
+                $('#prevImgBtn').on('click', function() {
+                    if (modalData.length === 0) return;
+                    modalIndex = (modalIndex - 1 + modalData.length) % modalData.length;
+                    showModalImage();
+                });
+            });
+        </script>
+    </body>
+</html>
